@@ -178,4 +178,5 @@ const config = {
         update: update
     }
 };
+//why is replit dying
 const game = new Phaser.Game(config);
