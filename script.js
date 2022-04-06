@@ -44,11 +44,32 @@ function update(){
   let mouse = this.input.mousePointer
   let cursors = this.input.keyboard.createCursorKeys()
   let spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-  let v = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V)
+  let v = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B)
+  let l = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V)
   let acx = (mouse.x-(532-this.player.x)+32).toFixed(1)
   let acy = (mouse.y-(532-this.player.y)+32).toFixed(1)
   places = [(Math.floor(acx / 32) * 32)+16,(Math.floor(acy / 32) * 32)+16]
   this.cursor = this.physics.add.sprite(places[0],places[1], 'cursor')
+  if(l.isDown){
+    if(breakMode){
+      this.status.setTexture('break')
+    }
+    else{
+      this.status.setTexture('build')
+    }
+    this.status.setVisible(true)
+    this.show.setVisible(true)
+    this.show_sub.setTexture(blocks[item])
+    this.show_sub.setVisible(true)
+    this.status.setPosition(this.player.x+25,this.player.y+25)
+    this.show.setPosition(this.player.x-25,this.player.y+25)
+    this.show_sub.setPosition(this.player.x-25,this.player.y+25)
+  }
+  else{
+    this.status.setVisible(false)
+    this.show.setVisible(false)
+    this.show_sub.setVisible(false)
+  }
   if(v.isDown){
     if(bldChange){
       bldChange = false
@@ -61,17 +82,14 @@ function update(){
       else{
         item += 1
       }
-      console.log(blocks[item])
     }
   }
   if (Phaser.Input.Keyboard.JustDown(spacebar)){
     if(breakMode){
       breakMode = false
-      console.log('build mode')
     }
     else{
       breakMode = true
-      console.log('break mode')
     }
   }
   if (cursors.left.isDown){  
@@ -133,6 +151,9 @@ function create(){
   }
   this.player = this.physics.add.sprite(532,532, 'player')
   this.cursor = this.physics.add.sprite(532,532, 'cursor')
+  this.show = this.add.sprite(496,496, 'show').setScale(0.5)
+  this.show_sub = this.add.sprite(507,507, blocks[item]).setScale(0.5)
+  this.status = this.add.sprite(532+25,532-25, 'break').setScale(0.5)
   this.physics.add.collider(this.player, this.colliders['b']);
   this.physics.add.overlap(this.player, this.colliders['w'],_ => {
     isInWater = true
@@ -149,7 +170,7 @@ function create(){
   this.cameras.main.startFollow(this.player)
   this.cameras.main.zoom = 1;
 }
-function  preload(){
+function preload(){
   this.load.image('player', 'assets/sprite.png')
   this.load.image('g','assets/grass.png')
   this.load.image('w','assets/water.png')
@@ -157,6 +178,9 @@ function  preload(){
   this.load.image('cursor','assets/cursor.png')
   this.load.image('s','assets/s.png')
   this.load.image('d','assets/d.png')
+  this.load.image('show','assets/curr_block.png')
+  this.load.image('break','assets/break.png')
+  this.load.image('build','assets/build.png')
 }
 const config = {
     type: Phaser.AUTO,
