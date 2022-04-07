@@ -1,4 +1,4 @@
-fetch('file.txt')
+ fetch('file.txt')
 .then(response => response.text())
 .then(fin => {
   localStorage.setItem('world',fin);
@@ -20,21 +20,18 @@ for (let p in data){
 }
 const world = {
   center: [400,400],
-  types: { //true = can  walk on false = cant
-    w: true,
-    b: false,
-    g: true,
-  },
   len: 32, //len of tile in pixels
   tiles: ac
 }
+var besio
 var isInWater = false
 var canClick = true
 var places;
-var breakMode = true
 var bldChange = true
 var item = 0
-const blocks = ['b','s','d','w','g']
+var hasAK = true
+var canFire = true
+const blocks = ['b','s','d','w','g','r']
 function update(){
   this.cursor.destroy()
   let velocity = 130
@@ -42,21 +39,30 @@ function update(){
     velocity = 50
   }
   let mouse = this.input.mousePointer
-  let cursors = this.input.keyboard.createCursorKeys()
-  let spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-  let v = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B)
+  let cursors = this.input.keyboard.createCursorKeys();
+  let fire = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  let spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+  let v = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C)
   let l = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V)
-  let acx = (mouse.x-(532-this.player.x)+32).toFixed(1)
-  let acy = (mouse.y-(532-this.player.y)+32).toFixed(1)
+  let acx = (mouse.x-(532-this.player.x)+32).toFixed(1);
+  let acy = (mouse.y-(532-this.player.y)+32).toFixed(1);
   places = [(Math.floor(acx / 32) * 32)+16,(Math.floor(acy / 32) * 32)+16]
   this.cursor = this.physics.add.sprite(places[0],places[1], 'cursor')
+  let angle = Phaser.Math.Angle.Between(acx,acy,this.player.x,this.player.y);
+  this.gun.setRotation(angle)
+  if(fire.isDown && canFire){
+    canFire = false
+    setTimeout(_ => {
+      canFire = true
+    },700)
+    console.log('s')
+    let cannonball=this.physics.add.sprite(this.player.x,this.player.y,'gun');
+    this.physics.add.collider(cannonball,this.colliders['b']);
+    this.physics.add.collider(cannonball,this.colliders['r']);
+    this.physics.moveTo(cannonball,acx,acy,700);
+    setTimeout(_ => {cannonball.destroy();},700)
+  }
   if(l.isDown){
-    if(breakMode){
-      this.status.setTexture('break')
-    }
-    else{
-      this.status.setTexture('build')
-    }
     this.status.setVisible(true)
     this.show.setVisible(true)
     this.show_sub.setTexture(blocks[item])
@@ -76,20 +82,13 @@ function update(){
       setTimeout(_ => {
         bldChange = true
       },200)
-      if(item == 4){
+      if(item == 5){
         item = 0
       }
       else{
         item += 1
       }
-    }
-  }
-  if (Phaser.Input.Keyboard.JustDown(spacebar)){
-    if(breakMode){
-      breakMode = false
-    }
-    else{
-      breakMode = true
+      console.log(blocks[item])
     }
   }
   if (cursors.left.isDown){  
@@ -113,20 +112,16 @@ function update(){
       setTimeout(_ => {
         canClick = true
       })
-      if (breakMode){
-      for(let i in this.colliders){
-        this.colliders[i].getChildren().forEach(tile => {
-          if(tile.x == places[0] && tile.y == places[1]){
-              tile.destroy()
-            }
-         })
-      }
-      }
-      else{
-        this.colliders[blocks[item]].create(places[0],places[1],[blocks[item]])
-        this.player.setDepth(1)
-      }
+    for(let i in this.colliders){
+      this.colliders[i].getChildren().forEach(tile => {
+        if(tile.x == places[0] && tile.y == places[1]){
+            tile.destroy()
+        }
+      })
     }
+    this.colliders[blocks[item]].create(places[0],places[1],[blocks[item]])
+    this.player.setDepth(1)
+      }
       },500)
 }
 function create(){
@@ -137,7 +132,8 @@ function create(){
     b: this.physics.add.staticGroup(),
     g: this.physics.add.group(),
     s: this.physics.add.group(),
-    d: this.physics.add.group()
+    d: this.physics.add.group(),
+    r: this.physics.add.staticGroup()
   }
   for(let i in world['tiles']){
     if (world['tiles'][i] == 'N'){
@@ -150,10 +146,14 @@ function create(){
     coords = [coords[0]+world['len'],coords[1]]
   }
   this.player = this.physics.add.sprite(532,532, 'player')
+  this.gun = this.physics.add.sprite(532,532, 'gun')
   this.cursor = this.physics.add.sprite(532,532, 'cursor')
   this.show = this.add.sprite(496,496, 'show').setScale(0.5)
   this.show_sub = this.add.sprite(507,507, blocks[item]).setScale(0.5)
-  this.status = this.add.sprite(532+25,532-25, 'break').setScale(0.5)
+  this.status = this.add.sprite(532+25,532-25, 'build').setScale(0.5)
+  this.status.setDepth(1)
+  this.show_sub.setDepth(1)
+  this.show.setDepth(1)
   this.physics.add.collider(this.player, this.colliders['b']);
   this.physics.add.overlap(this.player, this.colliders['w'],_ => {
     isInWater = true
@@ -167,6 +167,7 @@ function create(){
   this.physics.add.overlap(this.player, this.colliders['d'],_ => {
     isInWater = false
   })
+  this.physics.add.collider(this.player, this.colliders['r']);
   this.cameras.main.startFollow(this.player)
   this.cameras.main.zoom = 1;
 }
@@ -181,6 +182,8 @@ function preload(){
   this.load.image('show','assets/curr_block.png')
   this.load.image('break','assets/break.png')
   this.load.image('build','assets/build.png')
+  this.load.image('gun','assets/loading.png')
+  this.load.image('r','assets/r.png')
 }
 const config = {
     type: Phaser.AUTO,
